@@ -40,8 +40,8 @@ inputs2, outputs2, mapping2, gates2 = readNetlist(open(sys.argv[2], "r"))
 
 
 #Create 2 Databases
-ITE1 = []
-ITE2 = []
+ITE1 = {}
+ITE2 = {}
 DB1 = {}
 DB2 = {}
 
@@ -49,48 +49,38 @@ DB2 = {}
 #Within ITE function call use Cofactors function.
 
 def ite1(f,g,h):
-    ITE1.append((f,g,h))
-#    bdd1(f,g,h)
+    #    bdd1(f,g,h)
     if f is True:
-        temp = g
-        bdd1(temp)
+        return g
 
     elif f is False:
-        temp = h
-        bdd1(temp)
+        return h
 
     elif g == h:
-        temp = g
-        bdd1(temp)
+        return g
 
     elif g is True and h is False:
-        temp = f
-        bdd1(temp)
+        return f
 
     else:
-        cofactors(f,g,h)
+        cofactors1(f,inputs1[0])
 
 def ite2(f,g,h):
-    ITE2.append((f,g,h))
-#    bdd2(f,g,h)
+    #    bdd2(f,g,h)
     if f is True:
-        temp = g
-        bdd2(temp)
+        return g
 
     elif f is False:
-        temp = h
-        bdd2(temp)
+        return h
 
     elif g == h:
-        temp = g
-        bdd2(temp)
+        return g
 
     elif g is True and h is False:
-        temp = f
-        bdd2(temp)
+        return f
 
     else:
-         cofactors(f, g, h)
+         cofactors2(f,inputs2[0])
 
 
 #Create BDD func
@@ -109,10 +99,10 @@ def bdd1(f,g,h):
 
     else:
         if (f, g, h) in DB1:
-            return f, g, h
+            return DB1[(f,g,h)]
         else:
             DB1[(f, g, h)] = (f, g, h)
-            return 0
+            return DB1[(f,g,h)]
 
 def bdd2(f,g,h):
 
@@ -120,16 +110,49 @@ def bdd2(f,g,h):
         return g
 
     else:
-        if (f,g,h) in DB2:
-            return f, g, h
+        if (f, g, h) in DB2:
+            return DB2[(f,g,h)]
         else:
             DB2[(f, g, h)] = (f, g, h)
-            return 0
+            return DB2[(f,g,h)]
+
 #Create co factors func
 
+def cofactors1(f, x):
+    if f is True:
+        return (True,True)
+    elif f is False:
+        return (False,False)
+    else:
+        tempf = f[0]
+        if tempf[0] == x:
+            return (tempf[1],tempf[2])
+        elif f[0] > x:
+            return (f[0],f[0])
+        else:
+            f1_1,f1_0 = cofactors1(f[1],x)
+            f0_1,f0_0 = cofactors1(f[2],x)
+            bddf1 = bdd1(x,f1_1,f0_1)
+            bddf0 = bdd1(x,f1_0,f0_0)
+            return (bddf1,bddf0)
 
-def cofactors(f, g, h):
-    return 0
+def cofactors2(f, x):
+    if f is True:
+        return (True,True)
+    elif f is False:
+        return (False,False)
+    else:
+        if f[0] == x:
+            return (f[1],f[2])
+        elif f[0] > x:
+            return (f[0],f[0])
+        else:
+            f1_1,f1_0 = cofactors2(f[1],x)
+            f0_1,f0_0 = cofactors2(f[2],x)
+            bddf1 = bdd2(x,f1_1,f0_1)
+            bddf0 = bdd2(x,f1_0,f0_0)
+            return (bddf1,bddf0)
+
 #
 #     if f in DB1:
 #         dummy, f0, f1 = DB1[f]
@@ -143,94 +166,88 @@ def cofactors(f, g, h):
 #     bdd1(f0, g0, h0)
 #     bdd1(f1, g1, h1)
 
+signal_bdd_relation1 = {}
+signal_bdd_relation2 = {}
+
 #Go through all gates and create BDDs
 def read_gates1(inputs1, outputs1, mapping1, gates1):
 
     # Call bdd function for all inputs
     for input in inputs1:
-        bdd1(input,True,False)
-
+        bdd = bdd1(input,True,False)
+        signal_number = mapping1[input]
+        signal_bdd_relation1[signal_number] = bdd
 
     # gates_temp = [gate_x for (gate_x,port_x) in gates]
     # port_temp = [port_x for (gate_x,port_x) in gates]
     #def gatemap(gates.gate, inputs1[2])
 
-
-
-    # for gate in gates:
-    #     print(gate[0])
-    #     print(gate[1])
-    #     print(gate[1][0])
     for gate_s in gates1:
 
             # gate_s for (gate_s,port_s) in gates1 if gate_s != '':
         if gate_s[0] == 'and':
-            ite1(gate_s[1][0], gate_s[1][1], False)
-            #bdd of and gate
-            # bdd1(gate_s[1][0], gate_s[1][1], False)
-            #print('(port_temp[gate_s][0],port_temp[gate_s][1],0)')
-            #How to access port?
+            if gate_s[1][0] not in signal_bdd_relation1 or gate_s[1][1] not in signal_bdd_relation1:
+                continue
+            signal_bdd_relation1[gate_s[1][2]] = ite1(gate_s[1][0], gate_s[1][1], False)
             print('and')
 
-
-        elif  gate_s[0] == 'or':
-            ite1(gate_s[1][0], True, gate_s[1][1])
-            # bdd of or gate
-            # bbdd1(gate_s[1][0], True, gate_s[1][1])
-            #DB.append((a,1,b))
+        elif gate_s[0] == 'or':
+            if gate_s[1][0] not in signal_bdd_relation1 or gate_s[1][1] not in signal_bdd_relation1:
+                continue
+            signal_bdd_relation1[gate_s[1][2]] = ite1(gate_s[1][0], True, gate_s[1][1])
             print('or')
 
-        elif  gate_s[0] == 'inv':
-            ite1(gate_s[1][0], False, True)
-            # bdd of not gate
-            # bdd1(gate_s[1][0], False, True)
-            #DB.append((a,0,1))
+        elif gate_s[0] == 'inv':
+            if gate_s[1][0] not in signal_bdd_relation1:
+                continue
+            signal_bdd_relation1[gate_s[1][1]] = ite1(gate_s[1][0], False, True)
             print('inv')
 
         elif gate_s[0] == 'xor':
-            ite1(gate_s[1][0], (gate_s[1][1], False, True), (gate_s[1][1], True, False))
-            # bdd of xor gate
-            # bdd1(gate_s[1][0], (gate_s[1][1], False, True), (gate_s[1][1], True, False))
-            #DB.append((a,(b,0,1),(b,1,0)))
+            if gate_s[1][0] not in signal_bdd_relation1 or gate_s[1][1] not in signal_bdd_relation1:
+                continue
+            signal_bdd_relation1[gate_s[1][2]] = ite1(gate_s[1][0], (gate_s[1][1], False, True), (gate_s[1][1], True, False))
             print('xor')
 
 def read_gates2(inputs2, outputs2, mapping2, gates2):
 
     # Call bdd function for all inputs
     for input in inputs2:
-        bdd2(input,True,False)
+        bdd = bdd2(input, True, False)
+        signal_number = mapping2[input]
+        signal_bdd_relation2[signal_number] = bdd
+
+        # gates_temp = [gate_x for (gate_x,port_x) in gates]
+        # port_temp = [port_x for (gate_x,port_x) in gates]
+        # def gatemap(gates.gate, inputs1[2])
 
     for gate_s in gates2:
 
+        # gate_s for (gate_s,port_s) in gates1 if gate_s != '':
         if gate_s[0] == 'and':
-            ite2(gate_s[1][0], gate_s[1][1], False)
-            #bdd of and gate
-            # bdd2(gate_s[1][0], gate_s[1][1], False)
-            #print('(port_temp[gate_s][0],port_temp[gate_s][1],0)')
-            #How to access port?
+            if gate_s[1][0] not in signal_bdd_relation2 or gate_s[1][1] not in signal_bdd_relation2:
+                continue
+            signal_bdd_relation2[gate_s[1][2]] = ite2(gate_s[1][0], gate_s[1][1], False)
             print('and')
 
-
-        elif  gate_s[0] == 'or':
-            ite2(gate_s[1][0], True, gate_s[1][1])
-            # bdd of or gate
-            # bdd2(gate_s[1][0], True, gate_s[1][1])
-            #DB.append((a,1,b))
+        elif gate_s[0] == 'or':
+            if gate_s[1][0] not in signal_bdd_relation2 or gate_s[1][1] not in signal_bdd_relation2:
+                continue
+            signal_bdd_relation2[gate_s[1][2]] = ite2(gate_s[1][0], True, gate_s[1][1])
             print('or')
 
-        elif  gate_s[0] == 'inv':
-            ite2(gate_s[1][0], False, True)
-            # bdd of not gate
-            # bdd2(gate_s[1][0], False, True)
-            #DB.append((a,0,1))
+        elif gate_s[0] == 'inv':
+            if gate_s[1][0] not in signal_bdd_relation2:
+                continue
+            signal_bdd_relation2[gate_s[1][1]] = ite2(gate_s[1][0], False, True)
             print('inv')
 
         elif gate_s[0] == 'xor':
-            ite2(gate_s[1][0], (gate_s[1][1], False, True), (gate_s[1][1], True, False))
-            # bdd of xor gate
-            # bdd2(gate_s[1][0], (gate_s[1][1], False, True), (gate_s[1][1], True, False))
-            #DB.append((a,(b,0,1),(b,1,0)))
+            if gate_s[1][0] not in signal_bdd_relation2 or gate_s[1][1] not in signal_bdd_relation2:
+                continue
+            signal_bdd_relation2[gate_s[1][2]] = ite2(gate_s[1][0], (gate_s[1][1], False, True), (gate_s[1][1], True, False))
             print('xor')
+
 
 read_gates1(inputs1, outputs1, mapping1, gates1)
 read_gates2(inputs2, outputs2, mapping2, gates2)
