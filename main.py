@@ -124,9 +124,8 @@ def cofactors1(f, x):
     elif f is False:
         return (False,False)
     else:
-        tempf = f[0]
-        if tempf[0] == x:
-            return (tempf[1],tempf[2])
+        if f[0] == x:
+            return (f[1],f[2])
         elif f[0] > x:
             return (f[0],f[0])
         else:
@@ -153,18 +152,18 @@ def cofactors2(f, x):
             bddf0 = bdd2(x,f1_0,f0_0)
             return (bddf1,bddf0)
 
-#
-#     if f in DB1:
-#         dummy, f0, f1 = DB1[f]
-#
-#     if g in DB1:
-#         dummy, g0, g1 = DB1[g]
-#
-#     if h in DB1:
-#         dummy, h0, h1 = DB1[f]
-#
-#     bdd1(f0, g0, h0)
-#     bdd1(f1, g1, h1)
+
+    # if f in DB1:
+    #     dummy, f0, f1 = DB1[f]
+    #
+    # if g in DB1:
+    #     dummy, g0, g1 = DB1[g]
+    #
+    # if h in DB1:
+    #     dummy, h0, h1 = DB1[f]
+    #
+    # bdd1(f0, g0, h0)
+    # bdd1(f1, g1, h1)
 
 signal_bdd_relation1 = {}
 signal_bdd_relation2 = {}
@@ -185,28 +184,31 @@ def read_gates1(inputs1, outputs1, mapping1, gates1):
     for gate_s in gates1:
 
             # gate_s for (gate_s,port_s) in gates1 if gate_s != '':
+
+            # Replaced gate_s[][] by signal_bdd_relation1[gate_s[][]] in ite func call
+
         if gate_s[0] == 'and':
             if gate_s[1][0] not in signal_bdd_relation1 or gate_s[1][1] not in signal_bdd_relation1:
                 continue
-            signal_bdd_relation1[gate_s[1][2]] = ite1(gate_s[1][0], gate_s[1][1], False)
+            signal_bdd_relation1[gate_s[1][2]] = ite1(signal_bdd_relation1[gate_s[1][0]], signal_bdd_relation1[gate_s[1][1]], False)
             print('and')
 
         elif gate_s[0] == 'or':
             if gate_s[1][0] not in signal_bdd_relation1 or gate_s[1][1] not in signal_bdd_relation1:
                 continue
-            signal_bdd_relation1[gate_s[1][2]] = ite1(gate_s[1][0], True, gate_s[1][1])
+            signal_bdd_relation1[gate_s[1][2]] = ite1(signal_bdd_relation1[gate_s[1][0]], True, signal_bdd_relation1[gate_s[1][1]])
             print('or')
 
         elif gate_s[0] == 'inv':
             if gate_s[1][0] not in signal_bdd_relation1:
                 continue
-            signal_bdd_relation1[gate_s[1][1]] = ite1(gate_s[1][0], False, True)
+            signal_bdd_relation1[gate_s[1][1]] = ite1(signal_bdd_relation1[gate_s[1][0]], False, True)
             print('inv')
 
         elif gate_s[0] == 'xor':
             if gate_s[1][0] not in signal_bdd_relation1 or gate_s[1][1] not in signal_bdd_relation1:
                 continue
-            signal_bdd_relation1[gate_s[1][2]] = ite1(gate_s[1][0], (gate_s[1][1], False, True), (gate_s[1][1], True, False))
+            signal_bdd_relation1[gate_s[1][2]] = ite1(signal_bdd_relation1[gate_s[1][0]], (signal_bdd_relation1[gate_s[1][1]], False, True), (signal_bdd_relation1[gate_s[1][1]], True, False))
             print('xor')
 
 def read_gates2(inputs2, outputs2, mapping2, gates2):
@@ -224,28 +226,31 @@ def read_gates2(inputs2, outputs2, mapping2, gates2):
     for gate_s in gates2:
 
         # gate_s for (gate_s,port_s) in gates1 if gate_s != '':
+
+        # Replaced gate_s[][] by signal_bdd_relation2[gate_s[][]] in ite func call
+
         if gate_s[0] == 'and':
             if gate_s[1][0] not in signal_bdd_relation2 or gate_s[1][1] not in signal_bdd_relation2:
                 continue
-            signal_bdd_relation2[gate_s[1][2]] = ite2(gate_s[1][0], gate_s[1][1], False)
+            signal_bdd_relation2[gate_s[1][2]] = ite2(signal_bdd_relation2[gate_s[1][0]], signal_bdd_relation2[gate_s[1][1]], False)
             print('and')
 
         elif gate_s[0] == 'or':
             if gate_s[1][0] not in signal_bdd_relation2 or gate_s[1][1] not in signal_bdd_relation2:
                 continue
-            signal_bdd_relation2[gate_s[1][2]] = ite2(gate_s[1][0], True, gate_s[1][1])
+            signal_bdd_relation2[gate_s[1][2]] = ite2(signal_bdd_relation2[gate_s[1][0]], True, signal_bdd_relation2[gate_s[1][1]])
             print('or')
 
         elif gate_s[0] == 'inv':
             if gate_s[1][0] not in signal_bdd_relation2:
                 continue
-            signal_bdd_relation2[gate_s[1][1]] = ite2(gate_s[1][0], False, True)
+            signal_bdd_relation2[gate_s[1][1]] = ite2(signal_bdd_relation2[gate_s[1][0]], False, True)
             print('inv')
 
         elif gate_s[0] == 'xor':
             if gate_s[1][0] not in signal_bdd_relation2 or gate_s[1][1] not in signal_bdd_relation2:
                 continue
-            signal_bdd_relation2[gate_s[1][2]] = ite2(gate_s[1][0], (gate_s[1][1], False, True), (gate_s[1][1], True, False))
+            signal_bdd_relation2[gate_s[1][2]] = ite2(signal_bdd_relation2[gate_s[1][0]], (signal_bdd_relation2[gate_s[1][1]], False, True), (signal_bdd_relation2[gate_s[1][1]], True, False))
             print('xor')
 
 
